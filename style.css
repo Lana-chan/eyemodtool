@@ -1,0 +1,89 @@
+html, body{
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+}
+
+body {
+  background: url("bg.png");
+  text-align: center;
+  font: 12px sans-serif;
+}
+
+.centered {
+  text-align: center !important;
+}
+
+.hidden {
+	display: none;
+}
+
+.maple-window {
+  margin: 5px;
+  vertical-align: top;
+	display: inline-block;
+	border-width: 35px 20px 20px 20px;
+	border-style: solid;
+	border-image: url("mac-frame.png") 30 40 22 22 fill repeat;
+	border-image-width: 30px 40px 22px 22px;
+	color: #000;
+	position: relative;
+	text-align: left;
+	font-size: 12px;
+	font-family: geneva, sans-serif;
+	min-width: 200px;
+}
+
+.maple-window a {
+  color: #9999cc;
+  text-shadow: none;
+}
+.maple-window a:hover {
+  color: #ccccff;
+}
+
+.maple-window-title {
+  position: absolute;
+  top: -31px;
+  text-align: center;
+  width: 100%;
+  left: 0;
+}
+
+.maple-window-title > span {
+  background: #ccc;
+  padding: 1px 5px 1px 5px;
+  font-size: 12px;
+  font-family: chicago, sans-serif;
+  vertical-align: middle;
+  margin-right: 20px;
+  white-space: nowrap;
+}
+
+.single-picture {
+  border: #aaa solid 1px;
+  display: inline-block;
+  width: 256px;
+  margin: 2px;
+  padding: 5px;
+}
+.single-picture canvas {
+  max-width: 256px;
+  max-height: 224px;
+  margin: 0 auto;
+  width: auto;
+  height: auto;
+  display: block;
+}
+
+#app-view {
+	height: 100%;
+	width: 100%;
+	image-rendering: optimizeSpeed;             /* Older versions of FF          */
+	image-rendering: -moz-crisp-edges;          /* FF 6.0+                       */
+	image-rendering: -webkit-optimize-contrast; /* Safari                        */
+	image-rendering: -o-crisp-edges;            /* OS X & Windows Opera (12.02+) */
+	image-rendering: pixelated;                 /* Awesome future-browsers       */
+	-ms-interpolation-mode: nearest-neighbor;   /* IE                            */
+}
