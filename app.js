@@ -12,6 +12,22 @@ const savefileElem = document.getElementById('save-file'),
 			saveloadElem = document.getElementById('save-load'),
 			picturesElem = document.getElementById('pictures');
 
+
+// known valid types
+const knownCreators = [
+	"Imod",
+	"Burk"
+];
+
+const knownTypes = {
+	"Imod": [
+		"iIDB"
+	],
+	"Burk": [
+		"bIDB"
+	]
+};
+
 const scale = 5;
 
 const fr = new FileReader();
@@ -97,10 +113,9 @@ function wrapPicture(canvasElem) {
 	return pictureDiv;
 }
 
-function decodePalmImage(offset) {
-	let imageWidth = 160;
-	let imageHeight = 120;
-
+function decodePalmImage(offset, imageWidth, imageHeight) {
+	console.log(imageWidth);
+	console.log(imageHeight);
 	let tempCanvas = document.createElement('canvas');
 	tempCanvas.width = imageWidth;
 	tempCanvas.height = imageHeight;
@@ -137,21 +152,61 @@ function decodePalmImage(offset) {
 	picturesElem.appendChild(pictureWrapper);
 }
 
+function getU16LE(buffer, offset) {
+	return buffer.charCodeAt(offset) * 256 + buffer.charCodeAt(offset + 1);
+}
+
 function handleSaveFile() {
 	// clear all pictures currently displayed
 	while (picturesElem.firstChild) 
 		picturesElem.removeChild(picturesElem.firstChild);
 
-	let countOffset = 0x4c;
-	let count = fr.result.charCodeAt(countOffset) * 256 + fr.result.charCodeAt(countOffset + 1);
+	let typeOffset = 0x3c;
+	let type = fr.result.substring(typeOffset, typeOffset+4);
+	let creator = fr.result.substring(typeOffset+4, typeOffset+8);
+	console.log(type + " " + creator);
 
-	for (let i = 0; i < count; i++) {
+	if (knownCreators.indexOf(creator) < 0 || knownTypes[creator].indexOf(type) < 0) {
+		alert("file is not a known valid format!");
+		return;
+	}
+
+	// count seems strange
+	// eyemodule 1 adds second "half" of 320x240 pictures to header, pointing to middle of image buffer
+	// not sure if the header notices if those are extra data or not
+	// for now we'll decrease count if we find an image that's 320x240
+	let countOffset = 0x4c;
+	let count = getU16LE(fr.result, countOffset);
+
+	let i = 0;
+	while (count > 0) {
 		// guessed from hex dump -- possibly skipping information, right now we're interested only in pictures
 		let TOCoffset = 0x50 + i * 8;
-		let offset = fr.result.charCodeAt(TOCoffset) * 256 + fr.result.charCodeAt(TOCoffset + 1);
+		let offset = getU16LE(fr.result, TOCoffset);
+		console.log(offset);
 		
+		let imageWidth = 0;
+		let imageHeight = 0;
+		let imageOffset = 0;
+		if (type == "iIDB") {
+			imageWidth = getU16LE(fr.result, offset + 54);
+			imageHeight = getU16LE(fr.result, offset + 56);
+			imageOffset = offset + 58;
+			// workaround for header count mentioned above
+			if (imageWidth == 320 && imageHeight == 240) { count -= 1; }
+			if (imageWidth <= 0 || imageHeight <= 0) { alert("error decoding image header"); }
+		} else if (type == "bIDB") {
+			imageWidth = 160;
+			imageHeight = 120;
+			imageOffset = offset + 70;
+		} else {
+			console.log("dumb dingus");
+		}
+
 		// offset starts with picture title and then 4bpp bitmap
-		decodePalmImage(offset + 70); // Palm Size = 160 x 120 4bpp
+		decodePalmImage(imageOffset, imageWidth, imageHeight); // Palm Size = 160 x 120 4bpp
+		i++;
+		count--;
 	}
 }
 

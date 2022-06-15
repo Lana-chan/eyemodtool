@@ -4,26 +4,40 @@
 	<meta charset="utf-8">
 	<meta http-equiv="x-ua-compatible" content="ie=edge">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>eyemodule2 tool</title>
+	<title>eyemodule tool</title>
 	<link rel="stylesheet" href="style.css">
 	<link rel="manifest" href="manifest.webmanifest">
 
-	<meta property="og:title" content="eyemodule2 tool">
-	<meta property="og:description" content="extract images from eyemodule2 pdbs">
+	<meta property="og:title" content="eyemodule tool">
+	<meta property="og:description" content="extract images from eyemodule pdbs">
 	<meta property="og:image" content="https://maple.pet/em2tool/icon.png">
 	<meta property="og:url" content="https://maple.pet/em2tool/">
 </head>
 <body>
 	<div class="maple-window">
 		<div id="controls">
-			<input type="file" id="save-file" name="save-file" accept=".sav">
+			<input type="file" id="save-file" name="save-file" accept=".pdb">
 			<button type="button" id="save-load">load!</button>
 		</div>
 
 		<div id="pictures"></div>
-	</div>
+	</div><br/>
 
 	<div class="maple-window centered">
+		<p>accepts the following files:
+			<ul>
+				<li>eyemodule 1:
+					<ul>
+						<li>eyemoduleDB.pdb (160x120, 320x240 BW)</li>
+					</ul>
+				</li>
+				<li>eyemodule 2:
+					<ul>
+						<li>burkeDB.pdb (160x120 BW)</li>
+					</ul>
+				</li>
+			</ul>
+		</p>
 		<p>made by <a href="https://twitter.com/maplesbian">@maplesbian</a> - inspired by raphnet's <a href="https://www.raphnet.net/programmation/gbcam2png/index_en.php">gbcam2png</a></a></p>
 
 		<p>if you like the stuff i do, check out <a href="https://maple.pet/">my website</a> or <a href="https://ko-fi.com/squirrel">donate to me on ko-fi</a>!</p>

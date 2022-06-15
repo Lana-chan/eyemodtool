@@ -11,6 +11,10 @@ body {
   font: 12px sans-serif;
 }
 
+ul {
+  padding: 0;
+}
+
 .centered {
   text-align: center !important;
 }
