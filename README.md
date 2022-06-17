@@ -4,6 +4,12 @@ A web-based tool for extracting pictures out of eyemodule and eyemodule2 PDB fil
 
 [Play with it here!](https://maple.pet/eyemodtool/)
 
+## Sponsors
+
+Thank you to the following people who have [sponsored me](https://github.com/sponsors/Lana-chan) during the development of this project:
+
+* [miss-programgamer](https://github.com/miss-programgamer)
+
 ## License
 
 ```
