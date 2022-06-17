@@ -114,8 +114,6 @@ function wrapPicture(canvasElem) {
 }
 
 function decodePalmImage(offset, imageWidth, imageHeight) {
-	console.log(imageWidth);
-	console.log(imageHeight);
 	let tempCanvas = document.createElement('canvas');
 	tempCanvas.width = imageWidth;
 	tempCanvas.height = imageHeight;
@@ -164,7 +162,6 @@ function handleSaveFile() {
 	let typeOffset = 0x3c;
 	let type = fr.result.substring(typeOffset, typeOffset+4);
 	let creator = fr.result.substring(typeOffset+4, typeOffset+8);
-	console.log(type + " " + creator);
 
 	if (knownCreators.indexOf(creator) < 0 || knownTypes[creator].indexOf(type) < 0) {
 		alert("file is not a known valid format!");
@@ -183,7 +180,6 @@ function handleSaveFile() {
 		// guessed from hex dump -- possibly skipping information, right now we're interested only in pictures
 		let TOCoffset = 0x50 + i * 8;
 		let offset = getU16LE(fr.result, TOCoffset);
-		console.log(offset);
 		
 		let imageWidth = 0;
 		let imageHeight = 0;
@@ -199,8 +195,6 @@ function handleSaveFile() {
 			imageWidth = 160;
 			imageHeight = 120;
 			imageOffset = offset + 70;
-		} else {
-			console.log("dumb dingus");
 		}
 
 		// offset starts with picture title and then 4bpp bitmap
