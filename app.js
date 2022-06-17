@@ -21,7 +21,8 @@ const knownCreators = [
 
 const knownTypes = {
 	"Imod": [
-		"iIDB"
+		"iIDB",
+		"iVGA"
 	],
 	"Burk": [
 		"bIDB"
@@ -113,7 +114,7 @@ function wrapPicture(canvasElem) {
 	return pictureDiv;
 }
 
-function decodePalmImage(offset, imageWidth, imageHeight) {
+function decodePalmImage(offset, imageWidth, imageHeight, imageFormat) {
 	let tempCanvas = document.createElement('canvas');
 	tempCanvas.width = imageWidth;
 	tempCanvas.height = imageHeight;
@@ -121,20 +122,49 @@ function decodePalmImage(offset, imageWidth, imageHeight) {
 	let tempImage = tempCtx.createImageData(imageWidth, imageHeight);
 	const p = tempImage.data;
 
-	for (let ty = 0; ty < imageHeight; ty += 1) {
-		for (let tx = 0; tx < imageWidth; tx += 2) {
-			let pixOffset = (tx + ty * (imageWidth)) * 4;
-			let char = fr.result.charCodeAt(offset++);
-			let c1 = char >> 4 & 0b00001111;
-			let c2 = char & 0b00001111;
-			p[pixOffset]     = 255 - c1 * 16;
-			p[pixOffset + 1] = 255 - c1 * 16;
-			p[pixOffset + 2] = 255 - c1 * 16;
-			p[pixOffset + 3] = 255;
-			p[pixOffset + 4] = 255 - c2 * 16;
-			p[pixOffset + 5] = 255 - c2 * 16;
-			p[pixOffset + 6] = 255 - c2 * 16;
-			p[pixOffset + 7] = 255;
+	if (imageFormat == "palm") {
+		for (let ty = 0; ty < imageHeight; ty += 1) {
+			for (let tx = 0; tx < imageWidth; tx += 2) {
+				let pixOffset = (tx + ty * (imageWidth)) * 4;
+				let char = fr.result.charCodeAt(offset++);
+				let c1 = char >> 4 & 0b00001111;
+				let c2 = char & 0b00001111;
+				p[pixOffset]     = 255 - c1 * 16;
+				p[pixOffset + 1] = 255 - c1 * 16;
+				p[pixOffset + 2] = 255 - c1 * 16;
+				p[pixOffset + 3] = 255;
+				p[pixOffset + 4] = 255 - c2 * 16;
+				p[pixOffset + 5] = 255 - c2 * 16;
+				p[pixOffset + 6] = 255 - c2 * 16;
+				p[pixOffset + 7] = 255;
+			}
+		}
+	} else if (imageFormat == "YUYV") {
+		for (let ty = 0; ty < imageHeight; ty += 1) {
+			// each image has 24 slices, this skips to next slice
+			if (ty % 10 == 0) { offset += 4 }
+			for (let tx = 0; tx < imageWidth; tx += 2) {
+				let pixOffset = (tx + ty * (imageWidth)) * 4;
+				let y1 = fr.result.charCodeAt(offset + 1) - 16;
+				let y2 = fr.result.charCodeAt(offset + 3) - 16;
+				let u = fr.result.charCodeAt(offset + 0) - 128;
+				let v = fr.result.charCodeAt(offset + 2) - 128;
+				offset += 4;
+				let r1 = 1.164 * y1             + 1.596 * v;
+				let g1 = 1.164 * y1 - 0.392 * u - 0.813 * v;
+				let b1 = 1.164 * y1 + 2.017 * u;
+				let r2 = 1.164 * y2             + 1.596 * v;
+				let g2 = 1.164 * y2 - 0.392 * u - 0.813 * v;
+				let b2 = 1.164 * y2 + 2.017 * u;
+				p[pixOffset]     = r1;
+				p[pixOffset + 1] = g1;
+				p[pixOffset + 2] = b1;
+				p[pixOffset + 3] = 255;
+				p[pixOffset + 4] = r2;
+				p[pixOffset + 5] = g2;
+				p[pixOffset + 6] = b2;
+				p[pixOffset + 7] = 255;
+			}
 		}
 	}
 
@@ -150,8 +180,19 @@ function decodePalmImage(offset, imageWidth, imageHeight) {
 	picturesElem.appendChild(pictureWrapper);
 }
 
+function getU16BE(buffer, offset) {
+	return buffer.charCodeAt(offset + 1) * 256 + buffer.charCodeAt(offset);
+}
+
 function getU16LE(buffer, offset) {
 	return buffer.charCodeAt(offset) * 256 + buffer.charCodeAt(offset + 1);
+}
+
+function getU32LE(buffer, offset) {
+	return buffer.charCodeAt(offset) * 0x1000000 +
+	       buffer.charCodeAt(offset + 1) * 0x10000 +
+				 buffer.charCodeAt(offset + 2) * 0x100 +
+				 buffer.charCodeAt(offset + 3);
 }
 
 function handleSaveFile() {
@@ -178,12 +219,20 @@ function handleSaveFile() {
 	let i = 0;
 	while (count > 0) {
 		// guessed from hex dump -- possibly skipping information, right now we're interested only in pictures
-		let TOCoffset = 0x50 + i * 8;
-		let offset = getU16LE(fr.result, TOCoffset);
+		let TOCoffset = 0;
+		let offset = 0;
+		if (type == "iVGA") {
+			TOCoffset = 0x4e + i * 8;
+			offset = getU32LE(fr.result, TOCoffset);
+		} else {
+			TOCoffset = 0x50 + i * 8;
+			offset = getU16LE(fr.result, TOCoffset);
+		}
 		
 		let imageWidth = 0;
 		let imageHeight = 0;
 		let imageOffset = 0;
+		let imageFormat = "palm"
 		if (type == "iIDB") {
 			imageWidth = getU16LE(fr.result, offset + 54);
 			imageHeight = getU16LE(fr.result, offset + 56);
@@ -195,10 +244,17 @@ function handleSaveFile() {
 			imageWidth = 160;
 			imageHeight = 120;
 			imageOffset = offset + 70;
+		} else if (type == "iVGA") {
+			imageWidth = 320;
+			imageHeight = 240;
+			imageOffset = offset;
+			imageFormat = "YUYV";
+			i += 23; // header will have each picture in 24 "chunks"
+			count -= 23;
 		}
 
 		// offset starts with picture title and then 4bpp bitmap
-		decodePalmImage(imageOffset, imageWidth, imageHeight); // Palm Size = 160 x 120 4bpp
+		decodePalmImage(imageOffset, imageWidth, imageHeight, imageFormat);
 		i++;
 		count--;
 	}
