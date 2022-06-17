@@ -209,25 +209,14 @@ function handleSaveFile() {
 		return;
 	}
 
-	// count seems strange
-	// eyemodule 1 adds second "half" of 320x240 pictures to header, pointing to middle of image buffer
-	// not sure if the header notices if those are extra data or not
-	// for now we'll decrease count if we find an image that's 320x240
 	let countOffset = 0x4c;
 	let count = getU16LE(fr.result, countOffset);
 
 	let i = 0;
 	while (count > 0) {
 		// guessed from hex dump -- possibly skipping information, right now we're interested only in pictures
-		let TOCoffset = 0;
-		let offset = 0;
-		if (type == "iVGA") {
-			TOCoffset = 0x4e + i * 8;
-			offset = getU32LE(fr.result, TOCoffset);
-		} else {
-			TOCoffset = 0x50 + i * 8;
-			offset = getU16LE(fr.result, TOCoffset);
-		}
+		let TOCoffset = 0x4e + i * 8;
+		let offset = getU32LE(fr.result, TOCoffset);
 		
 		let imageWidth = 0;
 		let imageHeight = 0;
@@ -237,9 +226,6 @@ function handleSaveFile() {
 			imageWidth = getU16LE(fr.result, offset + 54);
 			imageHeight = getU16LE(fr.result, offset + 56);
 			imageOffset = offset + 58;
-			// workaround for header count mentioned above
-			if (imageWidth == 320 && imageHeight == 240) { count -= 1; }
-			if (imageWidth <= 0 || imageHeight <= 0) { alert("error decoding image header"); }
 		} else if (type == "bIDB") {
 			imageWidth = 160;
 			imageHeight = 120;
