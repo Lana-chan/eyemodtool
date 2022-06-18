@@ -29,8 +29,6 @@ const knownTypes = {
 	]
 };
 
-const scale = 5;
-
 const fr = new FileReader();
 
 function init() {
@@ -121,6 +119,8 @@ function decodePalmImage(offset, imageWidth, imageHeight, imageFormat) {
 	let tempCtx = tempCanvas.getContext('2d');
 	let tempImage = tempCtx.createImageData(imageWidth, imageHeight);
 	const p = tempImage.data;
+
+	let scale = Math.ceil(640 / imageWidth);
 
 	if (imageFormat == "palm") {
 		for (let ty = 0; ty < imageHeight; ty += 1) {
