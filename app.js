@@ -102,20 +102,22 @@ function wrapPicture(canvasElem) {
 	});
 	pictureDiv.appendChild(saveButtonElem);
 
-	let rotateLeftElem = document.createElement('button');
-	let rotateRightElem = document.createElement('button');
-
-	rotateLeftElem.innerHTML = "⟲";
-	rotateLeftElem.addEventListener('click', () => {
-		rotateCanvas(canvasElem, -1);
-	});
-	pictureDiv.appendChild(rotateLeftElem);
-
-	rotateRightElem.innerHTML = "⟳";
-	rotateRightElem.addEventListener('click', () => {
-		rotateCanvas(canvasElem, 1);
-	});
-	pictureDiv.appendChild(rotateRightElem);
+	if (canvasElem.tagName == "CANVAS") {
+		let rotateLeftElem = document.createElement('button');
+		let rotateRightElem = document.createElement('button');
+	
+		rotateLeftElem.innerHTML = "⟲";
+		rotateLeftElem.addEventListener('click', () => {
+			rotateCanvas(canvasElem, -1);
+		});
+		pictureDiv.appendChild(rotateLeftElem);
+	
+		rotateRightElem.innerHTML = "⟳";
+		rotateRightElem.addEventListener('click', () => {
+			rotateCanvas(canvasElem, 1);
+		});
+		pictureDiv.appendChild(rotateRightElem);
+	}
 
 	return pictureDiv;
 }
