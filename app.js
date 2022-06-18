@@ -25,7 +25,8 @@ const knownTypes = {
 		"iVGA"
 	],
 	"Burk": [
-		"bIDB"
+		"bIDB",
+		"bVGA"
 	]
 };
 
@@ -47,9 +48,16 @@ function startSaveParse() {
 function download(canvasElem) {
 	let now = new Date();
 	let dateString = now.getDate() + "-" + (now.getMonth()+1) + "-"+ now.getFullYear() + " " + now.getHours() + " " + now.getMinutes() + " " + now.getSeconds();
-	let filename = "gbcamtool " + dateString + ".png";
-
-	let content = canvasElem.toDataURL('image/png');
+	let filename = "";
+	let content = "";
+	
+	if (canvasElem.tagName == "CANVAS") {
+		content = canvasElem.toDataURL('image/png');
+		filename = "eyemodtool " + dateString + ".png";
+	} else if (canvasElem.tagName == "IMG") {
+		content = canvasElem.src;
+		filename = "eyemodtool " + dateString + ".jpg";
+	}
 
 	var element = document.createElement('a');
 	element.setAttribute('href', content);
@@ -180,6 +188,44 @@ function decodePalmImage(offset, imageWidth, imageHeight, imageFormat) {
 	picturesElem.appendChild(pictureWrapper);
 }
 
+function decodeJfifImage(startOffset, headerCur, headerCount) {
+	// find entire jfif block
+	let magicNumber = getU32LE(fr.result, startOffset + 10);
+	if (magicNumber != 1246120262) return; // if it's dumb and it works it's not dumb
+
+	// get all bits of data until we find one that ends in FF D9
+	let endOffset = 0;
+	let i = headerCur + 1;
+	blockOffsets = [startOffset];
+	for (i = headerCur + 1; i < headerCount; i++) {
+		let endTOCoffset = 0x4e + i * 8;
+		endOffset = getU32LE(fr.result, endTOCoffset);
+		let checkEnd = getU16LE(fr.result, endOffset - 2);
+		blockOffsets = blockOffsets.concat([endOffset]);
+		if (checkEnd == 65497) break; // FF D9
+	}
+	if (i = headerCount) {
+		endOffset = fr.result.length;
+		blockOffsets = blockOffsets.concat([endOffset]);
+	}
+
+	// concatenate skipping data bit headers
+	let JFIFbuffer = "";
+	for (i = 0; i < blockOffsets.length-1; i++) {
+		JFIFbuffer = JFIFbuffer + fr.result.substring(blockOffsets[i]+4, blockOffsets[i+1]);
+	}
+	
+	// make img with blob src
+	let JFIFb64 = "data:image/jpeg;base64," + btoa(JFIFbuffer);
+
+	// put img in wrapper
+	let newImg = document.createElement("img");
+	newImg.src = JFIFb64;
+	
+	let pictureWrapper = wrapPicture(newImg);
+	picturesElem.appendChild(pictureWrapper);
+}
+
 function getU16BE(buffer, offset) {
 	return buffer.charCodeAt(offset + 1) * 256 + buffer.charCodeAt(offset);
 }
@@ -205,15 +251,17 @@ function handleSaveFile() {
 	let creator = fr.result.substring(typeOffset+4, typeOffset+8);
 
 	if (knownCreators.indexOf(creator) < 0 || knownTypes[creator].indexOf(type) < 0) {
+		console.log(creator + " " + type);
 		alert("file is not a known valid format!");
 		return;
 	}
 
 	let countOffset = 0x4c;
 	let count = getU16LE(fr.result, countOffset);
+	let iterCount = count;
 
 	let i = 0;
-	while (count > 0) {
+	while (iterCount > 0) {
 		// guessed from hex dump -- possibly skipping information, right now we're interested only in pictures
 		let TOCoffset = 0x4e + i * 8;
 		let offset = getU32LE(fr.result, TOCoffset);
@@ -236,13 +284,19 @@ function handleSaveFile() {
 			imageOffset = offset;
 			imageFormat = "YUYV";
 			i += 23; // header will have each picture in 24 "chunks"
-			count -= 23;
+			iterCount -= 23;
+		} else if (type == "bVGA") {
+			// strange case, there's just jpeg files in DB, so we gotta blob those
+			imageOffset = offset;
 		}
 
-		// offset starts with picture title and then 4bpp bitmap
-		decodePalmImage(imageOffset, imageWidth, imageHeight, imageFormat);
+		if (type != "bVGA") {
+			decodePalmImage(imageOffset, imageWidth, imageHeight, imageFormat);
+		} else {
+			decodeJfifImage(imageOffset, i, count);
+		}
 		i++;
-		count--;
+		iterCount--;
 	}
 }
 

@@ -72,7 +72,7 @@ ul {
   margin: 2px;
   padding: 5px;
 }
-.single-picture canvas {
+.single-picture canvas, .single-picture img {
   max-width: 256px;
   max-height: 224px;
   margin: 0 auto;
